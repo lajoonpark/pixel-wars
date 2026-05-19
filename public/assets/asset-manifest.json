@@ -1,0 +1,998 @@
+{
+  "assets": [
+    {
+      "assetName": "plains",
+      "filePath": "public/assets/generated/tiles/plains.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "forest",
+      "filePath": "public/assets/generated/tiles/forest.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "mountain",
+      "filePath": "public/assets/generated/tiles/mountain.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "river",
+      "filePath": "public/assets/generated/tiles/river.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "swamp",
+      "filePath": "public/assets/generated/tiles/swamp.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "snow",
+      "filePath": "public/assets/generated/tiles/snow.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "road",
+      "filePath": "public/assets/generated/tiles/road.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city_ground",
+      "filePath": "public/assets/generated/tiles/city_ground.png",
+      "intendedUse": "terrain tile",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "farm",
+      "filePath": "public/assets/generated/buildings/farm.png",
+      "intendedUse": "building sprite",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "military_camp",
+      "filePath": "public/assets/generated/buildings/military_camp.png",
+      "intendedUse": "building sprite",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city",
+      "filePath": "public/assets/generated/buildings/city.png",
+      "intendedUse": "building sprite",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "defense_outpost",
+      "filePath": "public/assets/generated/buildings/defense_outpost.png",
+      "intendedUse": "building sprite",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "factory",
+      "filePath": "public/assets/generated/buildings/factory.png",
+      "intendedUse": "building sprite",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "factory_working_0",
+      "filePath": "public/assets/generated/buildings/anim/factory_working_0.png",
+      "intendedUse": "factory_working frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "factory_working_1",
+      "filePath": "public/assets/generated/buildings/anim/factory_working_1.png",
+      "intendedUse": "factory_working frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "factory_working_2",
+      "filePath": "public/assets/generated/buildings/anim/factory_working_2.png",
+      "intendedUse": "factory_working frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "factory_working_3",
+      "filePath": "public/assets/generated/buildings/anim/factory_working_3.png",
+      "intendedUse": "factory_working frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "farm_producing_0",
+      "filePath": "public/assets/generated/buildings/anim/farm_producing_0.png",
+      "intendedUse": "farm_producing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "farm_producing_1",
+      "filePath": "public/assets/generated/buildings/anim/farm_producing_1.png",
+      "intendedUse": "farm_producing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "farm_producing_2",
+      "filePath": "public/assets/generated/buildings/anim/farm_producing_2.png",
+      "intendedUse": "farm_producing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "farm_producing_3",
+      "filePath": "public/assets/generated/buildings/anim/farm_producing_3.png",
+      "intendedUse": "farm_producing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city_active_0",
+      "filePath": "public/assets/generated/buildings/anim/city_active_0.png",
+      "intendedUse": "city_active frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city_active_1",
+      "filePath": "public/assets/generated/buildings/anim/city_active_1.png",
+      "intendedUse": "city_active frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city_active_2",
+      "filePath": "public/assets/generated/buildings/anim/city_active_2.png",
+      "intendedUse": "city_active frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "city_active_3",
+      "filePath": "public/assets/generated/buildings/anim/city_active_3.png",
+      "intendedUse": "city_active frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "outpost_firing_0",
+      "filePath": "public/assets/generated/buildings/anim/outpost_firing_0.png",
+      "intendedUse": "outpost_firing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "outpost_firing_1",
+      "filePath": "public/assets/generated/buildings/anim/outpost_firing_1.png",
+      "intendedUse": "outpost_firing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "outpost_firing_2",
+      "filePath": "public/assets/generated/buildings/anim/outpost_firing_2.png",
+      "intendedUse": "outpost_firing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "outpost_firing_3",
+      "filePath": "public/assets/generated/buildings/anim/outpost_firing_3.png",
+      "intendedUse": "outpost_firing frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_idle_0",
+      "filePath": "public/assets/generated/units/player/infantry_idle_0.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_idle_1",
+      "filePath": "public/assets/generated/units/player/infantry_idle_1.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_idle_2",
+      "filePath": "public/assets/generated/units/player/infantry_idle_2.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_idle_3",
+      "filePath": "public/assets/generated/units/player/infantry_idle_3.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_walk_0",
+      "filePath": "public/assets/generated/units/player/infantry_walk_0.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_walk_1",
+      "filePath": "public/assets/generated/units/player/infantry_walk_1.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_walk_2",
+      "filePath": "public/assets/generated/units/player/infantry_walk_2.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_walk_3",
+      "filePath": "public/assets/generated/units/player/infantry_walk_3.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_attack_0",
+      "filePath": "public/assets/generated/units/player/infantry_attack_0.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_attack_1",
+      "filePath": "public/assets/generated/units/player/infantry_attack_1.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_attack_2",
+      "filePath": "public/assets/generated/units/player/infantry_attack_2.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_infantry_attack_3",
+      "filePath": "public/assets/generated/units/player/infantry_attack_3.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_idle_0",
+      "filePath": "public/assets/generated/units/player/scout_idle_0.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_idle_1",
+      "filePath": "public/assets/generated/units/player/scout_idle_1.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_idle_2",
+      "filePath": "public/assets/generated/units/player/scout_idle_2.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_idle_3",
+      "filePath": "public/assets/generated/units/player/scout_idle_3.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_walk_0",
+      "filePath": "public/assets/generated/units/player/scout_walk_0.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_walk_1",
+      "filePath": "public/assets/generated/units/player/scout_walk_1.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_walk_2",
+      "filePath": "public/assets/generated/units/player/scout_walk_2.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_walk_3",
+      "filePath": "public/assets/generated/units/player/scout_walk_3.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_attack_0",
+      "filePath": "public/assets/generated/units/player/scout_attack_0.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_attack_1",
+      "filePath": "public/assets/generated/units/player/scout_attack_1.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_attack_2",
+      "filePath": "public/assets/generated/units/player/scout_attack_2.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_scout_attack_3",
+      "filePath": "public/assets/generated/units/player/scout_attack_3.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_move_0",
+      "filePath": "public/assets/generated/units/player/tank_move_0.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_fire_0",
+      "filePath": "public/assets/generated/units/player/tank_fire_0.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_move_1",
+      "filePath": "public/assets/generated/units/player/tank_move_1.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_fire_1",
+      "filePath": "public/assets/generated/units/player/tank_fire_1.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_move_2",
+      "filePath": "public/assets/generated/units/player/tank_move_2.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_fire_2",
+      "filePath": "public/assets/generated/units/player/tank_fire_2.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_move_3",
+      "filePath": "public/assets/generated/units/player/tank_move_3.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "player_tank_fire_3",
+      "filePath": "public/assets/generated/units/player/tank_fire_3.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_idle_0",
+      "filePath": "public/assets/generated/units/enemy/infantry_idle_0.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_idle_1",
+      "filePath": "public/assets/generated/units/enemy/infantry_idle_1.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_idle_2",
+      "filePath": "public/assets/generated/units/enemy/infantry_idle_2.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_idle_3",
+      "filePath": "public/assets/generated/units/enemy/infantry_idle_3.png",
+      "intendedUse": "infantry idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_walk_0",
+      "filePath": "public/assets/generated/units/enemy/infantry_walk_0.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_walk_1",
+      "filePath": "public/assets/generated/units/enemy/infantry_walk_1.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_walk_2",
+      "filePath": "public/assets/generated/units/enemy/infantry_walk_2.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_walk_3",
+      "filePath": "public/assets/generated/units/enemy/infantry_walk_3.png",
+      "intendedUse": "infantry walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_attack_0",
+      "filePath": "public/assets/generated/units/enemy/infantry_attack_0.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_attack_1",
+      "filePath": "public/assets/generated/units/enemy/infantry_attack_1.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_attack_2",
+      "filePath": "public/assets/generated/units/enemy/infantry_attack_2.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_infantry_attack_3",
+      "filePath": "public/assets/generated/units/enemy/infantry_attack_3.png",
+      "intendedUse": "infantry attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_idle_0",
+      "filePath": "public/assets/generated/units/enemy/scout_idle_0.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_idle_1",
+      "filePath": "public/assets/generated/units/enemy/scout_idle_1.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_idle_2",
+      "filePath": "public/assets/generated/units/enemy/scout_idle_2.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_idle_3",
+      "filePath": "public/assets/generated/units/enemy/scout_idle_3.png",
+      "intendedUse": "scout idle frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_walk_0",
+      "filePath": "public/assets/generated/units/enemy/scout_walk_0.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_walk_1",
+      "filePath": "public/assets/generated/units/enemy/scout_walk_1.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_walk_2",
+      "filePath": "public/assets/generated/units/enemy/scout_walk_2.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_walk_3",
+      "filePath": "public/assets/generated/units/enemy/scout_walk_3.png",
+      "intendedUse": "scout walk frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_attack_0",
+      "filePath": "public/assets/generated/units/enemy/scout_attack_0.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_attack_1",
+      "filePath": "public/assets/generated/units/enemy/scout_attack_1.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_attack_2",
+      "filePath": "public/assets/generated/units/enemy/scout_attack_2.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_scout_attack_3",
+      "filePath": "public/assets/generated/units/enemy/scout_attack_3.png",
+      "intendedUse": "scout attack frame",
+      "size": "24x24",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_move_0",
+      "filePath": "public/assets/generated/units/enemy/tank_move_0.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_fire_0",
+      "filePath": "public/assets/generated/units/enemy/tank_fire_0.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_move_1",
+      "filePath": "public/assets/generated/units/enemy/tank_move_1.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_fire_1",
+      "filePath": "public/assets/generated/units/enemy/tank_fire_1.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_move_2",
+      "filePath": "public/assets/generated/units/enemy/tank_move_2.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_fire_2",
+      "filePath": "public/assets/generated/units/enemy/tank_fire_2.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_move_3",
+      "filePath": "public/assets/generated/units/enemy/tank_move_3.png",
+      "intendedUse": "tank move frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "enemy_tank_fire_3",
+      "filePath": "public/assets/generated/units/enemy/tank_fire_3.png",
+      "intendedUse": "tank fire frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "bullet",
+      "filePath": "public/assets/generated/effects/bullet.png",
+      "intendedUse": "bullet effect",
+      "size": "8x8",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "shell_trail",
+      "filePath": "public/assets/generated/effects/shell_trail.png",
+      "intendedUse": "shell trail effect",
+      "size": "16x8",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "selection_ring",
+      "filePath": "public/assets/generated/effects/selection_ring.png",
+      "intendedUse": "selection highlight",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_0",
+      "filePath": "public/assets/generated/effects/explosion_0.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_1",
+      "filePath": "public/assets/generated/effects/explosion_1.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_2",
+      "filePath": "public/assets/generated/effects/explosion_2.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_3",
+      "filePath": "public/assets/generated/effects/explosion_3.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_4",
+      "filePath": "public/assets/generated/effects/explosion_4.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "explosion_5",
+      "filePath": "public/assets/generated/effects/explosion_5.png",
+      "intendedUse": "explosion frame",
+      "size": "32x32",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "damage_numbers",
+      "filePath": "public/assets/generated/effects/damage_numbers.png",
+      "intendedUse": "damage number strip",
+      "size": "64x16",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "rain_0",
+      "filePath": "public/assets/generated/weather/rain_0.png",
+      "intendedUse": "rain overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "rain_1",
+      "filePath": "public/assets/generated/weather/rain_1.png",
+      "intendedUse": "rain overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "rain_2",
+      "filePath": "public/assets/generated/weather/rain_2.png",
+      "intendedUse": "rain overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "rain_3",
+      "filePath": "public/assets/generated/weather/rain_3.png",
+      "intendedUse": "rain overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "fog_0",
+      "filePath": "public/assets/generated/weather/fog_0.png",
+      "intendedUse": "fog overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "fog_1",
+      "filePath": "public/assets/generated/weather/fog_1.png",
+      "intendedUse": "fog overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "fog_2",
+      "filePath": "public/assets/generated/weather/fog_2.png",
+      "intendedUse": "fog overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "fog_3",
+      "filePath": "public/assets/generated/weather/fog_3.png",
+      "intendedUse": "fog overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "snowstorm_0",
+      "filePath": "public/assets/generated/weather/snowstorm_0.png",
+      "intendedUse": "snowstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "snowstorm_1",
+      "filePath": "public/assets/generated/weather/snowstorm_1.png",
+      "intendedUse": "snowstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "snowstorm_2",
+      "filePath": "public/assets/generated/weather/snowstorm_2.png",
+      "intendedUse": "snowstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "snowstorm_3",
+      "filePath": "public/assets/generated/weather/snowstorm_3.png",
+      "intendedUse": "snowstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "sandstorm_0",
+      "filePath": "public/assets/generated/weather/sandstorm_0.png",
+      "intendedUse": "sandstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "sandstorm_1",
+      "filePath": "public/assets/generated/weather/sandstorm_1.png",
+      "intendedUse": "sandstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "sandstorm_2",
+      "filePath": "public/assets/generated/weather/sandstorm_2.png",
+      "intendedUse": "sandstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "sandstorm_3",
+      "filePath": "public/assets/generated/weather/sandstorm_3.png",
+      "intendedUse": "sandstorm overlay frame",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "fog_of_war",
+      "filePath": "public/assets/generated/weather/fog_of_war.png",
+      "intendedUse": "darkened fog-of-war layer",
+      "size": "256x256",
+      "generationMethod": "Pillow"
+    },
+    {
+      "assetName": "build",
+      "filePath": "public/assets/svg/build.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "move",
+      "filePath": "public/assets/svg/move.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "attack",
+      "filePath": "public/assets/svg/attack.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "stop",
+      "filePath": "public/assets/svg/stop.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "research",
+      "filePath": "public/assets/svg/research.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "donate",
+      "filePath": "public/assets/svg/donate.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "alliance",
+      "filePath": "public/assets/svg/alliance.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "weather",
+      "filePath": "public/assets/svg/weather.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "vision",
+      "filePath": "public/assets/svg/vision.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "money",
+      "filePath": "public/assets/svg/money.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "population",
+      "filePath": "public/assets/svg/population.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "weapons",
+      "filePath": "public/assets/svg/weapons.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tanks",
+      "filePath": "public/assets/svg/tanks.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "supply",
+      "filePath": "public/assets/svg/supply.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_ballistics",
+      "filePath": "public/assets/svg/tech_ballistics.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_logistics",
+      "filePath": "public/assets/svg/tech_logistics.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_armor",
+      "filePath": "public/assets/svg/tech_armor.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_medicine",
+      "filePath": "public/assets/svg/tech_medicine.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_sensors",
+      "filePath": "public/assets/svg/tech_sensors.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "tech_industry",
+      "filePath": "public/assets/svg/tech_industry.svg",
+      "intendedUse": "ui or economy icon",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "player_banner",
+      "filePath": "public/assets/svg/player_banner.svg",
+      "intendedUse": "faction banner/emblem",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    },
+    {
+      "assetName": "enemy_banner",
+      "filePath": "public/assets/svg/enemy_banner.svg",
+      "intendedUse": "faction banner/emblem",
+      "size": "64x64",
+      "generationMethod": "SVG"
+    }
+  ]
+}
