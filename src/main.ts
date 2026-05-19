@@ -299,12 +299,13 @@ class BattleScene extends Phaser.Scene {
     })
 
     uiTrain.addEventListener('click', () => {
-      const camp = this.buildings.find((b) => b.faction === 'player' && b.type === 'military_camp' && b.constructionLeft <= 0)
-      if (!camp) {
+      const camps = this.buildings.filter((b) => b.faction === 'player' && b.type === 'military_camp' && b.constructionLeft <= 0)
+      if (camps.length === 0) {
         uiBuildStatus.textContent = 'Need a finished military camp to train infantry'
         return
       }
-      if (!this.tryTrainInfantry('player', camp.tileX, camp.tileY)) {
+      const trained = camps.some((camp) => this.tryTrainInfantry('player', camp.tileX, camp.tileY))
+      if (!trained) {
         uiBuildStatus.textContent = 'Cannot train (money/pop/conscription cap)'
       }
     })
@@ -605,10 +606,9 @@ class BattleScene extends Phaser.Scene {
     if (this.aiBuildTimer >= 5.5) {
       this.aiBuildTimer = 0
       const builtEnemy = this.buildings.filter((b) => b.faction === 'enemy' && b.hp > 0)
-      const goals: BuildingType[] = ['farm', 'farm', 'farm', 'military_camp', 'military_camp', 'city', 'city', 'defense_outpost']
-      const current = new Map<BuildingType, number>()
-      goals.forEach((g) => current.set(g, builtEnemy.filter((b) => b.type === g).length))
-      const nextGoal = goals.find((g) => (current.get(g) ?? 0) < goals.filter((x) => x === g).length)
+      const goals: Record<BuildingType, number> = { farm: 3, military_camp: 2, city: 2, defense_outpost: 1, factory: 0 }
+      const priority: BuildingType[] = ['farm', 'military_camp', 'city', 'defense_outpost']
+      const nextGoal = priority.find((type) => builtEnemy.filter((b) => b.type === type).length < goals[type])
       if (nextGoal) {
         const spot = this.findAiBuildSpot(50, 4, MAP_W - 3, 17)
         if (spot) this.tryPlaceBuilding('enemy', nextGoal, spot.x, spot.y)
@@ -627,7 +627,8 @@ class BattleScene extends Phaser.Scene {
     if (this.aiAttackTimer >= 12) {
       this.aiAttackTimer = 0
       const playerCities = this.buildings.filter((b) => b.faction === 'player' && b.type === 'city' && b.hp > 0)
-      const target = playerCities[0] ?? this.units.find((u) => u.faction === 'player')
+      const playerUnits = this.units.filter((u) => u.faction === 'player' && u.hp > 0)
+      const target = playerCities[0] ?? Phaser.Utils.Array.GetRandom(playerUnits)
       if (!target) return
       const enemyUnits = this.units.filter((u) => u.faction === 'enemy' && u.hp > 0)
       enemyUnits.forEach((unit, i) => {
