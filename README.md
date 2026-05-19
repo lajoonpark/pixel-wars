@@ -17,6 +17,7 @@ npm run dev
 - Mouse wheel: zoom
 - Left drag: drag-select player infantry
 - Left click: single select
+- Left click in build mode: place selected building
 - Right click: issue tile movement command
 
 ## Prototype Features
@@ -24,8 +25,15 @@ npm run dev
 - Real-time tile-based battlefield
 - Two factions (Player blue, Enemy red)
 - Infantry unit selection, movement, and auto-combat
+- Building placement: farm, military camp, city, defense outpost, and factory placeholder
+- Economy loop with farm-based income, building/unit costs, and income-per-second HUD readout
+- Population + capacity model with logistic-style growth slowdown near cap
+- Conscription slider that trades military capacity for worker-driven income
+- Military camp infantry training with money + population costs
+- Defense outposts as stationary auto-firing defenses
+- Enemy AI that expands economy, trains units, and launches periodic attacks
 - Fast time-to-kill combat readability
-- Minimap and top HUD (population, money, army size, selected units)
+- Minimap and expanded top HUD (population, capacity, money, income, army, selected units)
 - Generated pixel-art assets and SVG icon set
 
 ## Asset Pipeline
