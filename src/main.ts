@@ -44,6 +44,7 @@ const BUILDING_VISION: Record<BuildingType, number> = {
 }
 
 const UNIT_VISION_RADIUS = 4
+const FOREST_VISION_PENALTY = 0.6   // vision multiplier for units standing inside forest tiles
 
 const WEATHER_CONFIG = {
   clear:      { label: '☀ Clear',     visionMult: 1.0, moveMult: 1.0,  incomeMult: 1.0,  minDur: 70, maxDur: 140, weight: 5,   overlay: null as string | null, color: '#c8e6ff' },
@@ -1032,7 +1033,7 @@ class BattleScene extends Phaser.Scene {
       if (u.faction !== 'player' || u.hp <= 0) continue
       // Forest reduces vision for units standing in it
       const inForest = this.map[u.tileY]?.[u.tileX] === 'forest'
-      const radius = Math.round(UNIT_VISION_RADIUS * vMult * (inForest ? 0.6 : 1))
+      const radius = Math.round(UNIT_VISION_RADIUS * vMult * (inForest ? FOREST_VISION_PENALTY : 1))
       this.applyVision(u.tileX, u.tileY, radius)
     }
 
