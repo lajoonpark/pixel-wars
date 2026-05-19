@@ -4,14 +4,38 @@ import './style.css'
 const TILE_SIZE = 32
 const MAP_W = 72
 const MAP_H = 48
+const BASE_POP_GROWTH_PER_SECOND = 0.17
+
+const BUILDING_STATS = {
+  farm: { cost: 90, buildTime: 3, incomePerSecond: 4.2, popCap: 0, blocksMovement: true },
+  military_camp: { cost: 130, buildTime: 3.5, incomePerSecond: 0, popCap: 0, blocksMovement: true },
+  city: { cost: 210, buildTime: 4.5, incomePerSecond: 0.5, popCap: 22, blocksMovement: true },
+  defense_outpost: { cost: 150, buildTime: 3.5, incomePerSecond: 0, popCap: 0, blocksMovement: true },
+  factory: { cost: 260, buildTime: 5, incomePerSecond: 1.25, popCap: 0, blocksMovement: true },
+} as const
+
+const BASE_POP_CAP = 46
+const INFANTRY_COST = 40
+const INFANTRY_POP_COST = 1
 
 type TileType = 'plains' | 'forest' | 'mountain' | 'river' | 'swamp' | 'snow' | 'road' | 'city_ground'
 type Faction = 'player' | 'enemy'
 type UnitAnim = 'idle' | 'walk' | 'attack'
+type BuildingType = keyof typeof BUILDING_STATS
+
+type FactionState = {
+  money: number
+  population: number
+  maxPopulation: number
+  conscriptionPct: number
+  militaryPopulation: number
+  incomeRate: number
+}
 
 interface Unit {
   id: number
   faction: Faction
+  unitType: 'infantry'
   sprite: Phaser.GameObjects.Image
   ring: Phaser.GameObjects.Image
   tileX: number
@@ -28,6 +52,20 @@ interface Unit {
   state: UnitAnim
   pathingTimer: number
   moveAnimTick: number
+  popCost: number
+}
+
+interface Building {
+  id: number
+  faction: Faction
+  type: BuildingType
+  sprite: Phaser.GameObjects.Image
+  tileX: number
+  tileY: number
+  hp: number
+  constructionLeft: number
+  attackCooldown: number
+  animTick: number
 }
 
 const app = document.querySelector<HTMLDivElement>('#app')
@@ -38,25 +76,56 @@ app.innerHTML = `
     <h1>Pixel Wars</h1>
     <div class="grid">
       <span>Population</span><span id="ui-pop">0</span>
+      <span>Capacity</span><span id="ui-pop-cap">0</span>
       <span>Money</span><span id="ui-money">0</span>
+      <span>Income/sec</span><span id="ui-income">0</span>
       <span>Army Size</span><span id="ui-army">0</span>
       <span>Selected</span><span id="ui-selected">0</span>
     </div>
+    <div class="conscription-row">
+      <label for="ui-conscription">Conscription</label>
+      <input id="ui-conscription" type="range" min="5" max="70" step="1" value="35" />
+      <span id="ui-conscription-value">35%</span>
+    </div>
+    <div class="actions-row">
+      <button id="ui-train">Train Infantry</button>
+      <span id="ui-train-cost">$40 + 1 pop</span>
+    </div>
     <div id="selected-panel">Selected units: none</div>
+    <div id="build-panel">
+      <p>Build</p>
+      <div class="build-grid">
+        <button data-build="farm">Farm ($90)</button>
+        <button data-build="military_camp">Camp ($130)</button>
+        <button data-build="city">City ($210)</button>
+        <button data-build="defense_outpost">Outpost ($150)</button>
+        <button data-build="factory">Factory ($260)</button>
+        <button data-build="cancel">Cancel</button>
+      </div>
+      <div id="build-status">Build mode: none</div>
+    </div>
   </div>
   <div id="controls-hint">
     WASD/Arrows: camera<br>
     Wheel: zoom<br>
     Left drag: select<br>
+    Left click: place building in build mode<br>
     Right click: move
   </div>
 `
 
 const uiPop = document.querySelector<HTMLSpanElement>('#ui-pop')!
+const uiPopCap = document.querySelector<HTMLSpanElement>('#ui-pop-cap')!
 const uiMoney = document.querySelector<HTMLSpanElement>('#ui-money')!
+const uiIncome = document.querySelector<HTMLSpanElement>('#ui-income')!
 const uiArmy = document.querySelector<HTMLSpanElement>('#ui-army')!
 const uiSelected = document.querySelector<HTMLSpanElement>('#ui-selected')!
 const uiSelectedPanel = document.querySelector<HTMLDivElement>('#selected-panel')!
+const uiBuildStatus = document.querySelector<HTMLDivElement>('#build-status')!
+const uiTrain = document.querySelector<HTMLButtonElement>('#ui-train')!
+const uiConscription = document.querySelector<HTMLInputElement>('#ui-conscription')!
+const uiConscriptionValue = document.querySelector<HTMLSpanElement>('#ui-conscription-value')!
+const buildButtons = [...document.querySelectorAll<HTMLButtonElement>('#build-panel [data-build]')]
 
 const tileTypes: TileType[] = ['plains', 'forest', 'mountain', 'river', 'swamp', 'snow', 'road', 'city_ground']
 const passableTiles: Record<TileType, boolean> = {
@@ -73,19 +142,31 @@ const passableTiles: Record<TileType, boolean> = {
 class BattleScene extends Phaser.Scene {
   private map: TileType[][] = []
   private units: Unit[] = []
+  private buildings: Building[] = []
   private selected = new Set<number>()
+  private selectedBuild: BuildingType | null = null
+  private hoveredBuildTile: Phaser.Math.Vector2 | null = null
+  private nextBuildingId = 1
+  private nextUnitId = 1
+
+  private nations: Record<Faction, FactionState> = {
+    player: { money: 420, population: 34, maxPopulation: BASE_POP_CAP, conscriptionPct: 0.35, militaryPopulation: 0, incomeRate: 0 },
+    enemy: { money: 420, population: 34, maxPopulation: BASE_POP_CAP, conscriptionPct: 0.35, militaryPopulation: 0, incomeRate: 0 },
+  }
+
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key }
   private dragStart: Phaser.Math.Vector2 | null = null
   private dragCurrent: Phaser.Math.Vector2 | null = null
   private dragGraphics!: Phaser.GameObjects.Graphics
   private minimap!: Phaser.GameObjects.Graphics
+  private placementGraphics!: Phaser.GameObjects.Graphics
   private weather!: Phaser.GameObjects.Image
   private weatherFrame = 0
   private weatherTicker = 0
-  private money = 450
-  private population = 35
-  private nextUnitId = 1
+  private aiBuildTimer = 0
+  private aiTrainTimer = 0
+  private aiAttackTimer = 0
 
   constructor() {
     super('battle')
@@ -95,12 +176,18 @@ class BattleScene extends Phaser.Scene {
     for (const t of tileTypes) this.load.image(`tile-${t}`, `/assets/generated/tiles/${t}.png`)
     this.load.image('selection-ring', '/assets/generated/effects/selection_ring.png')
     this.load.image('bullet', '/assets/generated/effects/bullet.png')
-    this.load.image('explosion-0', '/assets/generated/effects/explosion_0.png')
-    this.load.image('explosion-1', '/assets/generated/effects/explosion_1.png')
-    this.load.image('explosion-2', '/assets/generated/effects/explosion_2.png')
-    this.load.image('explosion-3', '/assets/generated/effects/explosion_3.png')
-    this.load.image('explosion-4', '/assets/generated/effects/explosion_4.png')
-    this.load.image('explosion-5', '/assets/generated/effects/explosion_5.png')
+    for (let i = 0; i < 6; i += 1) this.load.image(`explosion-${i}`, `/assets/generated/effects/explosion_${i}.png`)
+
+    for (const buildingType of Object.keys(BUILDING_STATS) as BuildingType[]) {
+      this.load.image(`building-${buildingType}`, `/assets/generated/buildings/${buildingType}.png`)
+    }
+    for (let i = 0; i < 4; i += 1) {
+      this.load.image(`anim-factory-${i}`, `/assets/generated/buildings/anim/factory_working_${i}.png`)
+      this.load.image(`anim-farm-${i}`, `/assets/generated/buildings/anim/farm_producing_${i}.png`)
+      this.load.image(`anim-city-${i}`, `/assets/generated/buildings/anim/city_active_${i}.png`)
+      this.load.image(`anim-outpost-${i}`, `/assets/generated/buildings/anim/outpost_firing_${i}.png`)
+    }
+
     for (const faction of ['player', 'enemy'] as const) {
       for (const stance of ['idle', 'walk', 'attack'] as const) {
         for (let i = 0; i < 4; i += 1) {
@@ -108,6 +195,7 @@ class BattleScene extends Phaser.Scene {
         }
       }
     }
+
     for (let i = 0; i < 4; i += 1) this.load.image(`weather-rain-${i}`, `/assets/generated/weather/rain_${i}.png`)
     this.load.image('fog-of-war', '/assets/generated/weather/fog_of_war.png')
   }
@@ -120,33 +208,49 @@ class BattleScene extends Phaser.Scene {
 
     this.makeMap()
     this.drawMap()
-    this.spawnUnits()
+    this.spawnStartingForces()
 
     const fog = this.add.tileSprite(0, 0, MAP_W * TILE_SIZE, MAP_H * TILE_SIZE, 'fog-of-war')
-    fog.setOrigin(0, 0).setDepth(20).setAlpha(0.25)
-    fog.setScrollFactor(1)
+    fog.setOrigin(0, 0).setDepth(20).setAlpha(0.24)
 
-    this.weather = this.add.image(0, 0, 'weather-rain-0').setOrigin(0, 0).setDepth(30).setAlpha(0.32)
+    this.weather = this.add.image(0, 0, 'weather-rain-0').setOrigin(0, 0).setDepth(30).setAlpha(0.28)
     this.weather.setDisplaySize(MAP_W * TILE_SIZE, MAP_H * TILE_SIZE)
 
     this.dragGraphics = this.add.graphics().setDepth(40).setScrollFactor(0)
     this.minimap = this.add.graphics().setDepth(50).setScrollFactor(0)
-    this.drawMinimap()
+    this.placementGraphics = this.add.graphics().setDepth(18)
+
+    this.bindUiEvents()
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (pointer.rightButtonDown()) {
         this.commandMove(pointer.worldX, pointer.worldY)
-      } else {
-        this.dragStart = new Phaser.Math.Vector2(pointer.x, pointer.y)
-        this.dragCurrent = new Phaser.Math.Vector2(pointer.x, pointer.y)
+        return
       }
+      this.dragStart = new Phaser.Math.Vector2(pointer.x, pointer.y)
+      this.dragCurrent = new Phaser.Math.Vector2(pointer.x, pointer.y)
     })
 
     this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      this.hoveredBuildTile = new Phaser.Math.Vector2(
+        Phaser.Math.Clamp(Math.floor(pointer.worldX / TILE_SIZE), 0, MAP_W - 1),
+        Phaser.Math.Clamp(Math.floor(pointer.worldY / TILE_SIZE), 0, MAP_H - 1),
+      )
       if (this.dragStart) this.dragCurrent = new Phaser.Math.Vector2(pointer.x, pointer.y)
     })
 
     this.input.on('pointerup', (pointer: Phaser.Input.Pointer) => {
+      if (pointer.rightButtonReleased()) return
+      if (this.selectedBuild) {
+        const tx = Phaser.Math.Clamp(Math.floor(pointer.worldX / TILE_SIZE), 0, MAP_W - 1)
+        const ty = Phaser.Math.Clamp(Math.floor(pointer.worldY / TILE_SIZE), 0, MAP_H - 1)
+        this.tryPlaceBuilding('player', this.selectedBuild, tx, ty)
+        this.dragStart = null
+        this.dragCurrent = null
+        this.dragGraphics.clear()
+        return
+      }
+
       if (!this.dragStart || !this.dragCurrent) return
       const dragDistance = Phaser.Math.Distance.BetweenPoints(this.dragStart, this.dragCurrent)
       if (dragDistance < 5) {
@@ -157,7 +261,6 @@ class BattleScene extends Phaser.Scene {
       this.dragStart = null
       this.dragCurrent = null
       this.dragGraphics.clear()
-      this.updateUi()
     })
 
     this.input.on('wheel', (_p: unknown, _go: unknown, _dx: number, dy: number) => {
@@ -165,24 +268,53 @@ class BattleScene extends Phaser.Scene {
       cam.zoom = Phaser.Math.Clamp(cam.zoom - dy * 0.001, 0.6, 2)
     })
 
-    this.time.addEvent({
-      delay: 4000,
-      loop: true,
-      callback: () => {
-        this.money += 6 + this.units.filter((u) => u.faction === 'player').length
-      },
-    })
-
     this.updateUi()
   }
 
-  update(_time: number, delta: number) {
-    this.handleCamera(delta / 1000)
+  update(_time: number, deltaMs: number) {
+    const dt = deltaMs / 1000
+    this.handleCamera(dt)
     this.updateDragVisual()
-    this.updateUnits(delta / 1000)
-    this.updateWeather(delta / 1000)
+    this.updatePlacementVisual()
+    this.updateEconomyAndPopulation(dt)
+    this.updateBuildings(dt)
+    this.updateUnits(dt)
+    this.updateEnemyAi(dt)
+    this.updateWeather(dt)
     this.drawMinimap()
     this.updateUi()
+  }
+
+  private bindUiEvents() {
+    buildButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const selected = button.dataset.build
+        if (!selected || selected === 'cancel') {
+          this.selectedBuild = null
+        } else {
+          this.selectedBuild = selected as BuildingType
+        }
+        uiBuildStatus.textContent = `Build mode: ${this.selectedBuild ?? 'none'}`
+      })
+    })
+
+    uiTrain.addEventListener('click', () => {
+      const camps = this.buildings.filter((b) => b.faction === 'player' && b.type === 'military_camp' && b.constructionLeft <= 0)
+      if (camps.length === 0) {
+        uiBuildStatus.textContent = 'Need a finished military camp to train infantry'
+        return
+      }
+      const trained = camps.some((camp) => this.tryTrainInfantry('player', camp.tileX, camp.tileY))
+      if (!trained) {
+        uiBuildStatus.textContent = 'Cannot train (money/pop/conscription cap)'
+      }
+    })
+
+    uiConscription.addEventListener('input', () => {
+      const pct = Number(uiConscription.value) / 100
+      this.nations.player.conscriptionPct = pct
+      uiConscriptionValue.textContent = `${Math.round(pct * 100)}%`
+    })
   }
 
   private makeMap() {
@@ -214,17 +346,75 @@ class BattleScene extends Phaser.Scene {
     }
   }
 
-  private createUnit(faction: Faction, x: number, y: number) {
+  private spawnStartingForces() {
+    this.placeBuildingDirect('player', 'city', 12, 31, 0)
+    this.placeBuildingDirect('player', 'military_camp', 15, 29, 0)
+    this.placeBuildingDirect('player', 'farm', 10, 33, 0)
+
+    this.placeBuildingDirect('enemy', 'city', 58, 9, 0)
+    this.placeBuildingDirect('enemy', 'military_camp', 55, 11, 0)
+    this.placeBuildingDirect('enemy', 'farm', 60, 8, 0)
+
+    for (let i = 0; i < 6; i += 1) this.tryTrainInfantry('player', 14 + (i % 3), 30 + Math.floor(i / 3), true)
+    for (let i = 0; i < 7; i += 1) this.tryTrainInfantry('enemy', 56 + (i % 4), 11 + Math.floor(i / 4), true)
+  }
+
+  private placeBuildingDirect(faction: Faction, type: BuildingType, x: number, y: number, constructionLeft?: number) {
+    const sprite = this.add
+      .image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, `building-${type}`)
+      .setDepth(7)
+    const building: Building = {
+      id: this.nextBuildingId++,
+      faction,
+      type,
+      sprite,
+      tileX: x,
+      tileY: y,
+      hp: 120,
+      constructionLeft: constructionLeft ?? BUILDING_STATS[type].buildTime,
+      attackCooldown: 0,
+      animTick: 0,
+    }
+    this.buildings.push(building)
+  }
+
+  private tryPlaceBuilding(faction: Faction, type: BuildingType, x: number, y: number): boolean {
+    const nation = this.nations[faction]
+    const stats = BUILDING_STATS[type]
+    if (nation.money < stats.cost || !this.isValidBuildingTile(x, y)) return false
+
+    nation.money -= stats.cost
+    this.placeBuildingDirect(faction, type, x, y)
+    return true
+  }
+
+  private tryTrainInfantry(faction: Faction, baseX: number, baseY: number, free = false): boolean {
+    const nation = this.nations[faction]
+    const maxMilitaryPop = nation.population * nation.conscriptionPct
+    if (!free) {
+      if (nation.money < INFANTRY_COST) return false
+      if (nation.militaryPopulation + INFANTRY_POP_COST > nation.population) return false
+      if (nation.militaryPopulation + INFANTRY_POP_COST > maxMilitaryPop) return false
+      nation.money -= INFANTRY_COST
+    }
+
+    const spawn = this.findOpenTileNear(baseX, baseY)
+    if (!spawn) {
+      if (!free) nation.money += INFANTRY_COST
+      return false
+    }
+
     const key = `u-${faction}-idle-0`
-    const sprite = this.add.image(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2, key).setDepth(10)
+    const sprite = this.add.image(spawn.x * TILE_SIZE + TILE_SIZE / 2, spawn.y * TILE_SIZE + TILE_SIZE / 2, key).setDepth(10)
     const ring = this.add.image(sprite.x, sprite.y, 'selection-ring').setDepth(9).setVisible(false)
     this.units.push({
       id: this.nextUnitId++,
       faction,
+      unitType: 'infantry',
       sprite,
       ring,
-      tileX: x,
-      tileY: y,
+      tileX: spawn.x,
+      tileY: spawn.y,
       worldX: sprite.x,
       worldY: sprite.y,
       hp: 32,
@@ -237,17 +427,44 @@ class BattleScene extends Phaser.Scene {
       state: 'idle',
       pathingTimer: 0,
       moveAnimTick: 0,
+      popCost: INFANTRY_POP_COST,
     })
+    nation.militaryPopulation += INFANTRY_POP_COST
+    return true
   }
 
-  private spawnUnits() {
-    for (let i = 0; i < 10; i += 1) this.createUnit('player', 8 + (i % 5), 28 + Math.floor(i / 5))
-    for (let i = 0; i < 12; i += 1) this.createUnit('enemy', 55 + (i % 6), 10 + Math.floor(i / 6))
+  private findOpenTileNear(cx: number, cy: number): Phaser.Math.Vector2 | null {
+    for (let radius = 0; radius <= 4; radius += 1) {
+      for (let y = cy - radius; y <= cy + radius; y += 1) {
+        for (let x = cx - radius; x <= cx + radius; x += 1) {
+          if (Math.abs(x - cx) !== radius && Math.abs(y - cy) !== radius) continue
+          if (this.isTileWalkable(x, y)) return new Phaser.Math.Vector2(x, y)
+        }
+      }
+    }
+    return null
+  }
+
+  private isValidBuildingTile(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false
+    const tile = this.map[y][x]
+    if (!passableTiles[tile]) return false
+    if (tile === 'river' || tile === 'mountain') return false
+    if (this.buildings.some((b) => b.tileX === x && b.tileY === y && b.hp > 0)) return false
+    if (this.units.some((u) => u.tileX === x && u.tileY === y && u.hp > 0)) return false
+    return true
+  }
+
+  private isTileWalkable(x: number, y: number): boolean {
+    if (!this.inBounds(x, y)) return false
+    if (!passableTiles[this.map[y][x]]) return false
+    const blocker = this.buildings.find((b) => b.tileX === x && b.tileY === y && b.hp > 0 && BUILDING_STATS[b.type].blocksMovement)
+    return !blocker
   }
 
   private handleCamera(dt: number) {
     const cam = this.cameras.main
-    const speed = 520 * dt / cam.zoom
+    const speed = (520 * dt) / cam.zoom
     if (this.wasd.A.isDown || this.cursors.left.isDown) cam.scrollX -= speed
     if (this.wasd.D.isDown || this.cursors.right.isDown) cam.scrollX += speed
     if (this.wasd.W.isDown || this.cursors.up.isDown) cam.scrollY -= speed
@@ -287,7 +504,7 @@ class BattleScene extends Phaser.Scene {
 
   private updateDragVisual() {
     this.dragGraphics.clear()
-    if (!this.dragStart || !this.dragCurrent) return
+    if (!this.dragStart || !this.dragCurrent || this.selectedBuild) return
     const x = Math.min(this.dragStart.x, this.dragCurrent.x)
     const y = Math.min(this.dragStart.y, this.dragCurrent.y)
     const w = Math.abs(this.dragStart.x - this.dragCurrent.x)
@@ -298,11 +515,24 @@ class BattleScene extends Phaser.Scene {
     this.dragGraphics.strokeRect(x, y, w, h)
   }
 
+  private updatePlacementVisual() {
+    this.placementGraphics.clear()
+    if (!this.selectedBuild || !this.hoveredBuildTile) return
+    const tx = this.hoveredBuildTile.x
+    const ty = this.hoveredBuildTile.y
+    const valid = this.isValidBuildingTile(tx, ty) && this.nations.player.money >= BUILDING_STATS[this.selectedBuild].cost
+    this.placementGraphics.lineStyle(2, valid ? 0x7bf29a : 0xff6c6c, 0.95)
+    this.placementGraphics.fillStyle(valid ? 0x40ca6a : 0xc94646, 0.22)
+    this.placementGraphics.fillRect(tx * TILE_SIZE + 1, ty * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2)
+    this.placementGraphics.strokeRect(tx * TILE_SIZE + 1, ty * TILE_SIZE + 1, TILE_SIZE - 2, TILE_SIZE - 2)
+  }
+
   private commandMove(worldX: number, worldY: number) {
     const targetX = Phaser.Math.Clamp(Math.floor(worldX / TILE_SIZE), 0, MAP_W - 1)
     const targetY = Phaser.Math.Clamp(Math.floor(worldY / TILE_SIZE), 0, MAP_H - 1)
     const selectedUnits = this.units.filter((u) => this.selected.has(u.id) && u.faction === 'player')
     if (!selectedUnits.length) return
+
     selectedUnits.forEach((unit, i) => {
       const column = i % 4
       const row = Math.floor(i / 4)
@@ -314,8 +544,114 @@ class BattleScene extends Phaser.Scene {
     })
   }
 
+  private updateEconomyAndPopulation(dt: number) {
+    for (const faction of ['player', 'enemy'] as const) {
+      const nation = this.nations[faction]
+      const built = this.buildings.filter((b) => b.faction === faction && b.hp > 0 && b.constructionLeft <= 0)
+      const cityCount = built.filter((b) => b.type === 'city').length
+      const incomeBase = built.reduce((sum, b) => sum + BUILDING_STATS[b.type].incomePerSecond, 0)
+      const workingRatio = Phaser.Math.Clamp(1 - nation.conscriptionPct, 0.1, 1)
+      nation.incomeRate = incomeBase * workingRatio
+      nation.money += nation.incomeRate * dt
+
+      nation.maxPopulation = BASE_POP_CAP + cityCount * BUILDING_STATS.city.popCap
+      const capacityRatio = nation.maxPopulation > 0 ? nation.population / nation.maxPopulation : 1
+      const slowdown = Phaser.Math.Clamp(1 - capacityRatio, 0, 1)
+      nation.population = Math.min(nation.maxPopulation, nation.population + BASE_POP_GROWTH_PER_SECOND * slowdown * dt)
+
+      if (nation.militaryPopulation > nation.population) nation.militaryPopulation = nation.population
+    }
+  }
+
+  private updateBuildings(dt: number) {
+    const playerUnits = this.units.filter((u) => u.faction === 'player' && u.hp > 0)
+    const enemyUnits = this.units.filter((u) => u.faction === 'enemy' && u.hp > 0)
+
+    for (const b of this.buildings) {
+      if (b.hp <= 0) continue
+      if (b.constructionLeft > 0) {
+        b.constructionLeft = Math.max(0, b.constructionLeft - dt)
+        b.sprite.setAlpha(0.58 + (1 - b.constructionLeft / Math.max(BUILDING_STATS[b.type].buildTime, 0.1)) * 0.42)
+        b.sprite.setTint(0xcfd9e4)
+        continue
+      }
+      b.sprite.setAlpha(1)
+      b.sprite.clearTint()
+      b.attackCooldown = Math.max(0, b.attackCooldown - dt)
+
+      const frame = Math.floor((b.animTick += dt * 5)) % 4
+      if (b.type === 'farm') b.sprite.setTexture(`anim-farm-${frame}`)
+      if (b.type === 'city') b.sprite.setTexture(`anim-city-${frame}`)
+      if (b.type === 'factory') b.sprite.setTexture(`anim-factory-${frame}`)
+
+      if (b.type === 'defense_outpost') {
+        const opponents = b.faction === 'player' ? enemyUnits : playerUnits
+        const target = opponents.find((u) => Phaser.Math.Distance.Between(u.worldX, u.worldY, b.sprite.x, b.sprite.y) <= TILE_SIZE * 4.2)
+        if (target && b.attackCooldown <= 0) {
+          b.attackCooldown = 0.6
+          b.sprite.setTexture(`anim-outpost-${frame}`)
+          this.fireProjectileFromWorld(b.sprite.x, b.sprite.y, 13, target)
+        } else {
+          b.sprite.setTexture(`building-defense_outpost`)
+        }
+      }
+    }
+  }
+
+  private updateEnemyAi(dt: number) {
+    this.aiBuildTimer += dt
+    this.aiTrainTimer += dt
+    this.aiAttackTimer += dt
+
+    if (this.aiBuildTimer >= 5.5) {
+      this.aiBuildTimer = 0
+      const builtEnemy = this.buildings.filter((b) => b.faction === 'enemy' && b.hp > 0)
+      const goals: Record<BuildingType, number> = { farm: 3, military_camp: 2, city: 2, defense_outpost: 1, factory: 0 }
+      const priority: BuildingType[] = ['farm', 'military_camp', 'city', 'defense_outpost']
+      const nextGoal = priority.find((type) => builtEnemy.filter((b) => b.type === type).length < goals[type])
+      if (nextGoal) {
+        const spot = this.findAiBuildSpot(50, 4, MAP_W - 3, 17)
+        if (spot) this.tryPlaceBuilding('enemy', nextGoal, spot.x, spot.y)
+      }
+    }
+
+    if (this.aiTrainTimer >= 3.4) {
+      this.aiTrainTimer = 0
+      const camps = this.buildings.filter((b) => b.faction === 'enemy' && b.type === 'military_camp' && b.constructionLeft <= 0)
+      if (camps.length) {
+        const camp = Phaser.Utils.Array.GetRandom(camps)
+        this.tryTrainInfantry('enemy', camp.tileX, camp.tileY)
+      }
+    }
+
+    if (this.aiAttackTimer >= 12) {
+      this.aiAttackTimer = 0
+      const playerCities = this.buildings.filter((b) => b.faction === 'player' && b.type === 'city' && b.hp > 0)
+      const playerUnits = this.units.filter((u) => u.faction === 'player' && u.hp > 0)
+      const target = playerCities[0] ?? Phaser.Utils.Array.GetRandom(playerUnits)
+      if (!target) return
+      const enemyUnits = this.units.filter((u) => u.faction === 'enemy' && u.hp > 0)
+      enemyUnits.forEach((unit, i) => {
+        const tx = Phaser.Math.Clamp((target as Unit | Building).tileX + (i % 3) - 1, 0, MAP_W - 1)
+        const ty = Phaser.Math.Clamp((target as Unit | Building).tileY + Math.floor(i / 3) - 1, 0, MAP_H - 1)
+        unit.destination = new Phaser.Math.Vector2(tx, ty)
+        unit.path = this.findPath(unit.tileX, unit.tileY, tx, ty)
+      })
+    }
+  }
+
+  private findAiBuildSpot(minX: number, minY: number, maxX: number, maxY: number): Phaser.Math.Vector2 | null {
+    for (let tries = 0; tries < 50; tries += 1) {
+      const x = Phaser.Math.Between(minX, maxX)
+      const y = Phaser.Math.Between(minY, maxY)
+      if (this.isValidBuildingTile(x, y)) return new Phaser.Math.Vector2(x, y)
+    }
+    return null
+  }
+
   private updateUnits(dt: number) {
     const aliveUnits = this.units.filter((u) => u.hp > 0)
+
     for (const u of aliveUnits) {
       u.attackCooldown = Math.max(0, u.attackCooldown - dt)
       u.pathingTimer += dt
@@ -359,16 +695,6 @@ class BattleScene extends Phaser.Scene {
     const enemies = aliveUnits.filter((u) => u.faction === 'enemy')
     const players = aliveUnits.filter((u) => u.faction === 'player')
 
-    for (const e of enemies) {
-      if (e.path.length === 0 && e.destination === null) {
-        const near = players[Math.floor(Math.random() * Math.max(1, players.length))]
-        if (near) {
-          e.destination = new Phaser.Math.Vector2(near.tileX + Phaser.Math.Between(-2, 2), near.tileY + Phaser.Math.Between(-2, 2))
-          e.path = this.findPath(e.tileX, e.tileY, Phaser.Math.Clamp(e.destination.x, 0, MAP_W - 1), Phaser.Math.Clamp(e.destination.y, 0, MAP_H - 1))
-        }
-      }
-    }
-
     for (const u of aliveUnits) {
       const opponents = u.faction === 'player' ? enemies : players
       let target: Unit | undefined
@@ -384,21 +710,26 @@ class BattleScene extends Phaser.Scene {
         u.attackCooldown = 0.37
         u.state = 'attack'
         u.sprite.setTexture(`u-${u.faction}-attack-${Phaser.Math.Between(0, 3)}`)
-        this.fireProjectile(u, target)
+        this.fireProjectileFromWorld(u.worldX, u.worldY, u.damage, target)
       }
     }
 
+    this.resolveDestroyedUnits()
+  }
+
+  private resolveDestroyedUnits() {
     for (const u of this.units) {
       if (u.hp > 0) continue
       if (this.selected.has(u.id)) this.selected.delete(u.id)
+      this.nations[u.faction].militaryPopulation = Math.max(0, this.nations[u.faction].militaryPopulation - u.popCost)
       u.sprite.destroy()
       u.ring.destroy()
     }
     this.units = this.units.filter((u) => u.hp > 0)
   }
 
-  private fireProjectile(attacker: Unit, defender: Unit) {
-    const bullet = this.add.image(attacker.worldX, attacker.worldY, 'bullet').setDepth(12)
+  private fireProjectileFromWorld(x: number, y: number, damage: number, defender: Unit) {
+    const bullet = this.add.image(x, y, 'bullet').setDepth(12)
     this.tweens.add({
       targets: bullet,
       x: defender.worldX,
@@ -407,21 +738,23 @@ class BattleScene extends Phaser.Scene {
       ease: 'Linear',
       onComplete: () => {
         bullet.destroy()
-        defender.hp -= attacker.damage
-        this.showDamage(defender.worldX, defender.worldY, attacker.damage)
+        defender.hp -= damage
+        this.showDamage(defender.worldX, defender.worldY, damage)
         if (defender.hp <= 0) this.playExplosion(defender.worldX, defender.worldY)
       },
     })
   }
 
   private showDamage(x: number, y: number, damage: number) {
-    const txt = this.add.text(x - 6, y - 22, String(damage), {
-      fontFamily: 'monospace',
-      fontSize: '13px',
-      color: '#ff7f7f',
-      stroke: '#1a1e24',
-      strokeThickness: 3,
-    }).setDepth(25)
+    const txt = this.add
+      .text(x - 6, y - 22, String(damage), {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#ff7f7f',
+        stroke: '#1a1e24',
+        strokeThickness: 3,
+      })
+      .setDepth(25)
     this.tweens.add({ targets: txt, y: y - 44, alpha: 0, duration: 420, onComplete: () => txt.destroy() })
   }
 
@@ -440,7 +773,7 @@ class BattleScene extends Phaser.Scene {
   }
 
   private findPath(sx: number, sy: number, tx: number, ty: number): Phaser.Math.Vector2[] {
-    if (!this.inBounds(tx, ty) || !passableTiles[this.map[ty][tx]]) return []
+    if (!this.inBounds(tx, ty) || !this.isTileWalkable(tx, ty)) return []
     const queue: Phaser.Math.Vector2[] = [new Phaser.Math.Vector2(sx, sy)]
     const cameFrom = new Map<string, Phaser.Math.Vector2 | null>()
     cameFrom.set(`${sx},${sy}`, null)
@@ -458,7 +791,7 @@ class BattleScene extends Phaser.Scene {
         const nx = current.x + dx
         const ny = current.y + dy
         const key = `${nx},${ny}`
-        if (!this.inBounds(nx, ny) || cameFrom.has(key) || !passableTiles[this.map[ny][nx]]) continue
+        if (!this.inBounds(nx, ny) || cameFrom.has(key) || !this.isTileWalkable(nx, ny)) continue
         cameFrom.set(key, current)
         queue.push(new Phaser.Math.Vector2(nx, ny))
       }
@@ -507,6 +840,12 @@ class BattleScene extends Phaser.Scene {
         this.minimap.fillRect(x + px * sx, y + py * sy, sx * 2, sy * 2)
       }
     }
+
+    for (const b of this.buildings) {
+      this.minimap.fillStyle(b.faction === 'player' ? 0x77beff : 0xff8f92, 0.9)
+      this.minimap.fillRect(x + b.tileX * sx, y + b.tileY * sy, 2, 2)
+    }
+
     for (const u of this.units) {
       this.minimap.fillStyle(u.faction === 'player' ? 0x3f9dff : 0xff6368, 1)
       this.minimap.fillRect(x + u.tileX * sx, y + u.tileY * sy, 3, 3)
@@ -520,15 +859,24 @@ class BattleScene extends Phaser.Scene {
   }
 
   private updateUi() {
+    const player = this.nations.player
     const playerArmy = this.units.filter((u) => u.faction === 'player').length
-    uiPop.textContent = String(this.population)
-    uiMoney.textContent = String(this.money)
-    uiArmy.textContent = String(playerArmy)
+    const maxConscriptionArmy = Math.floor(player.population * player.conscriptionPct)
+    uiPop.textContent = player.population.toFixed(1)
+    uiPopCap.textContent = player.maxPopulation.toFixed(0)
+    uiMoney.textContent = Math.floor(player.money).toString()
+    uiIncome.textContent = player.incomeRate.toFixed(1)
+    uiArmy.textContent = `${playerArmy} / ${maxConscriptionArmy}`
     uiSelected.textContent = String(this.selected.size)
+
+    const affordable = player.money >= INFANTRY_COST
+    uiTrain.disabled = !affordable
+
     if (this.selected.size === 0) {
       uiSelectedPanel.textContent = 'Selected units: none'
       return
     }
+
     const selectedUnits = this.units.filter((u) => this.selected.has(u.id))
     const lines = selectedUnits.slice(0, 6).map((u) => `Infantry #${u.id} HP ${Math.max(0, u.hp)}`)
     uiSelectedPanel.textContent = `Selected units: ${lines.join(' | ')}${selectedUnits.length > 6 ? ' ...' : ''}`
