@@ -129,3 +129,21 @@ button:disabled {
   text-align: right;
   color: #d0e3ff;
 }
+
+#weather-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  background: rgba(10, 17, 24, 0.82);
+  border: 1px solid #2e3f52;
+  border-radius: 20px;
+  padding: 5px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #c8e6ff;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}

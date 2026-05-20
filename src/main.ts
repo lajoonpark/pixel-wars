@@ -22,6 +22,37 @@ type TileType = 'plains' | 'forest' | 'mountain' | 'river' | 'swamp' | 'snow' | 
 type Faction = 'player' | 'enemy'
 type UnitAnim = 'idle' | 'walk' | 'attack'
 type BuildingType = keyof typeof BUILDING_STATS
+type WeatherType = 'clear' | 'rain' | 'fog_weather' | 'snowstorm' | 'drought'
+
+const TILE_MOVE_COST: Record<TileType, number> = {
+  plains: 1,
+  forest: 1.5,
+  mountain: Infinity,
+  river: Infinity,
+  swamp: 2.2,
+  snow: 1.6,
+  road: 0.6,
+  city_ground: 1,
+}
+
+const BUILDING_VISION: Record<BuildingType, number> = {
+  farm: 2,
+  military_camp: 3,
+  city: 4,
+  defense_outpost: 6,
+  factory: 2,
+}
+
+const UNIT_VISION_RADIUS = 4
+const FOREST_VISION_PENALTY = 0.6   // vision multiplier for units standing inside forest tiles
+
+const WEATHER_CONFIG = {
+  clear:      { label: '☀ Clear',     visionMult: 1.0, moveMult: 1.0,  incomeMult: 1.0,  minDur: 70, maxDur: 140, weight: 5,   overlay: null as string | null, color: '#c8e6ff' },
+  rain:       { label: '🌧 Rain',      visionMult: 0.8, moveMult: 0.85, incomeMult: 1.0,  minDur: 25, maxDur:  60, weight: 2,   overlay: 'rain',               color: '#7bafd4' },
+  fog_weather:{ label: '🌫 Fog',       visionMult: 0.4, moveMult: 1.0,  incomeMult: 1.0,  minDur: 20, maxDur:  45, weight: 1,   overlay: 'fog',                color: '#a0b4bc' },
+  snowstorm:  { label: '❄ Snowstorm', visionMult: 0.7, moveMult: 0.75, incomeMult: 0.75, minDur: 20, maxDur:  50, weight: 1,   overlay: 'snowstorm',          color: '#d4e8f0' },
+  drought:    { label: '🏜 Drought',   visionMult: 1.0, moveMult: 1.0,  incomeMult: 0.6,  minDur: 30, maxDur:  80, weight: 1.5, overlay: null as string | null, color: '#d4c090' },
+} as const
 
 type FactionState = {
   money: number
@@ -110,8 +141,10 @@ app.innerHTML = `
     Wheel: zoom<br>
     Left drag: select<br>
     Left click: place building in build mode<br>
-    Right click: move
+    Right click: move<br>
+    F: toggle fog
   </div>
+  <div id="weather-banner">☀ Clear</div>
 `
 
 const uiPop = document.querySelector<HTMLSpanElement>('#ui-pop')!
@@ -126,6 +159,7 @@ const uiTrain = document.querySelector<HTMLButtonElement>('#ui-train')!
 const uiConscription = document.querySelector<HTMLInputElement>('#ui-conscription')!
 const uiConscriptionValue = document.querySelector<HTMLSpanElement>('#ui-conscription-value')!
 const buildButtons = [...document.querySelectorAll<HTMLButtonElement>('#build-panel [data-build]')]
+const uiWeatherBanner = document.querySelector<HTMLDivElement>('#weather-banner')!
 
 const tileTypes: TileType[] = ['plains', 'forest', 'mountain', 'river', 'swamp', 'snow', 'road', 'city_ground']
 const passableTiles: Record<TileType, boolean> = {
@@ -161,9 +195,15 @@ class BattleScene extends Phaser.Scene {
   private dragGraphics!: Phaser.GameObjects.Graphics
   private minimap!: Phaser.GameObjects.Graphics
   private placementGraphics!: Phaser.GameObjects.Graphics
-  private weather!: Phaser.GameObjects.Image
+  private fogState: number[][] = []          // 0=hidden 1=explored 2=visible
+  private fogGraphics!: Phaser.GameObjects.Graphics
+  private fogEnabled = true
+  private weatherSprite!: Phaser.GameObjects.TileSprite
   private weatherFrame = 0
   private weatherTicker = 0
+  private currentWeather: WeatherType = 'clear'
+  private weatherRemaining = 90             // seconds until weather change
+  private fogKey!: Phaser.Input.Keyboard.Key
   private aiBuildTimer = 0
   private aiTrainTimer = 0
   private aiAttackTimer = 0
@@ -197,6 +237,8 @@ class BattleScene extends Phaser.Scene {
     }
 
     for (let i = 0; i < 4; i += 1) this.load.image(`weather-rain-${i}`, `/assets/generated/weather/rain_${i}.png`)
+    for (let i = 0; i < 4; i += 1) this.load.image(`weather-fog-${i}`, `/assets/generated/weather/fog_${i}.png`)
+    for (let i = 0; i < 4; i += 1) this.load.image(`weather-snowstorm-${i}`, `/assets/generated/weather/snowstorm_${i}.png`)
     this.load.image('fog-of-war', '/assets/generated/weather/fog_of_war.png')
   }
 
@@ -210,11 +252,21 @@ class BattleScene extends Phaser.Scene {
     this.drawMap()
     this.spawnStartingForces()
 
-    const fog = this.add.tileSprite(0, 0, MAP_W * TILE_SIZE, MAP_H * TILE_SIZE, 'fog-of-war')
-    fog.setOrigin(0, 0).setDepth(20).setAlpha(0.24)
+    // Fog of war graphics layer (depth 20 — covers tiles at 1, enemy units at 10, buildings at 7)
+    this.fogGraphics = this.add.graphics().setDepth(20)
 
-    this.weather = this.add.image(0, 0, 'weather-rain-0').setOrigin(0, 0).setDepth(30).setAlpha(0.28)
-    this.weather.setDisplaySize(MAP_W * TILE_SIZE, MAP_H * TILE_SIZE)
+    // Weather overlay (above fog)
+    this.weatherSprite = this.add.tileSprite(0, 0, MAP_W * TILE_SIZE, MAP_H * TILE_SIZE, 'weather-rain-0')
+      .setOrigin(0, 0).setDepth(30).setAlpha(0).setScrollFactor(1)
+
+    // Initialise fog state: everything hidden
+    this.fogState = []
+    for (let y = 0; y < MAP_H; y++) {
+      this.fogState.push(new Array(MAP_W).fill(0))
+    }
+
+    // Fog toggle key
+    this.fogKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F)
 
     this.dragGraphics = this.add.graphics().setDepth(40).setScrollFactor(0)
     this.minimap = this.add.graphics().setDepth(50).setScrollFactor(0)
@@ -281,6 +333,9 @@ class BattleScene extends Phaser.Scene {
     this.updateUnits(dt)
     this.updateEnemyAi(dt)
     this.updateWeather(dt)
+    this.computeFog()
+    this.renderFog()
+    this.updateVisibility()
     this.drawMinimap()
     this.updateUi()
   }
@@ -405,7 +460,8 @@ class BattleScene extends Phaser.Scene {
     }
 
     const key = `u-${faction}-idle-0`
-    const sprite = this.add.image(spawn.x * TILE_SIZE + TILE_SIZE / 2, spawn.y * TILE_SIZE + TILE_SIZE / 2, key).setDepth(10)
+    const spriteDepth = faction === 'player' ? 22 : 10
+    const sprite = this.add.image(spawn.x * TILE_SIZE + TILE_SIZE / 2, spawn.y * TILE_SIZE + TILE_SIZE / 2, key).setDepth(spriteDepth)
     const ring = this.add.image(sprite.x, sprite.y, 'selection-ring').setDepth(9).setVisible(false)
     this.units.push({
       id: this.nextUnitId++,
@@ -551,7 +607,7 @@ class BattleScene extends Phaser.Scene {
       const cityCount = built.filter((b) => b.type === 'city').length
       const incomeBase = built.reduce((sum, b) => sum + BUILDING_STATS[b.type].incomePerSecond, 0)
       const workingRatio = Phaser.Math.Clamp(1 - nation.conscriptionPct, 0.1, 1)
-      nation.incomeRate = incomeBase * workingRatio
+      nation.incomeRate = incomeBase * workingRatio * WEATHER_CONFIG[this.currentWeather].incomeMult
       nation.money += nation.incomeRate * dt
 
       nation.maxPopulation = BASE_POP_CAP + cityCount * BUILDING_STATS.city.popCap
@@ -674,7 +730,9 @@ class BattleScene extends Phaser.Scene {
           u.worldY = ty
           u.path.shift()
         } else {
-          const step = Math.min(u.moveSpeed * dt, dist)
+          const tileCost = TILE_MOVE_COST[this.map[next.y][next.x]] || 1
+          const effectiveSpeed = (u.moveSpeed / tileCost) * WEATHER_CONFIG[this.currentWeather].moveMult
+          const step = Math.min(effectiveSpeed * dt, dist)
           u.worldX += (dx / dist) * step
           u.worldY += (dy / dist) * step
         }
@@ -774,26 +832,40 @@ class BattleScene extends Phaser.Scene {
 
   private findPath(sx: number, sy: number, tx: number, ty: number): Phaser.Math.Vector2[] {
     if (!this.inBounds(tx, ty) || !this.isTileWalkable(tx, ty)) return []
-    const queue: Phaser.Math.Vector2[] = [new Phaser.Math.Vector2(sx, sy)]
-    const cameFrom = new Map<string, Phaser.Math.Vector2 | null>()
-    cameFrom.set(`${sx},${sy}`, null)
-    const dirs = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ]
 
-    while (queue.length) {
-      const current = queue.shift()!
-      if (current.x === tx && current.y === ty) break
+    // Dijkstra with terrain costs
+    const costMap = new Map<string, number>()
+    const cameFrom = new Map<string, Phaser.Math.Vector2 | null>()
+    // open: [cost, x, y]
+    const open: [number, number, number][] = [[0, sx, sy]]
+    costMap.set(`${sx},${sy}`, 0)
+    cameFrom.set(`${sx},${sy}`, null)
+
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const
+
+    while (open.length) {
+      // Find minimum cost node (simple linear scan — map is small)
+      let minIdx = 0
+      for (let i = 1; i < open.length; i++) {
+        if (open[i][0] < open[minIdx][0]) minIdx = i
+      }
+      const [curCost, cx, cy] = open.splice(minIdx, 1)[0]
+
+      if (cx === tx && cy === ty) break
+
       for (const [dx, dy] of dirs) {
-        const nx = current.x + dx
-        const ny = current.y + dy
+        const nx = cx + dx
+        const ny = cy + dy
+        if (!this.inBounds(nx, ny) || !this.isTileWalkable(nx, ny)) continue
+        const tileCost = TILE_MOVE_COST[this.map[ny][nx]]
+        if (!isFinite(tileCost)) continue
+        const newCost = curCost + tileCost
         const key = `${nx},${ny}`
-        if (!this.inBounds(nx, ny) || cameFrom.has(key) || !this.isTileWalkable(nx, ny)) continue
-        cameFrom.set(key, current)
-        queue.push(new Phaser.Math.Vector2(nx, ny))
+        if (!costMap.has(key) || newCost < costMap.get(key)!) {
+          costMap.set(key, newCost)
+          cameFrom.set(key, new Phaser.Math.Vector2(cx, cy))
+          open.push([newCost, nx, ny])
+        }
       }
     }
 
@@ -813,11 +885,55 @@ class BattleScene extends Phaser.Scene {
   }
 
   private updateWeather(dt: number) {
-    this.weatherTicker += dt
-    if (this.weatherTicker >= 0.2) {
-      this.weatherTicker = 0
-      this.weatherFrame = (this.weatherFrame + 1) % 4
-      this.weather.setTexture(`weather-rain-${this.weatherFrame}`)
+    // Advance weather timer
+    this.weatherRemaining -= dt
+    if (this.weatherRemaining <= 0) {
+      this.pickNextWeather()
+    }
+
+    // Animate weather overlay
+    const cfg = WEATHER_CONFIG[this.currentWeather]
+    if (cfg.overlay) {
+      this.weatherTicker += dt
+      if (this.weatherTicker >= 0.18) {
+        this.weatherTicker = 0
+        this.weatherFrame = (this.weatherFrame + 1) % 4
+        this.weatherSprite.setTexture(`weather-${cfg.overlay}-${this.weatherFrame}`)
+      }
+      this.weatherSprite.setAlpha(0.28)
+    } else {
+      this.weatherSprite.setAlpha(0)
+    }
+
+    // Check debug fog toggle (edge-triggered)
+    if (Phaser.Input.Keyboard.JustDown(this.fogKey)) {
+      this.fogEnabled = !this.fogEnabled
+      if (!this.fogEnabled) {
+        this.fogGraphics.clear()
+        // Show all enemies when fog disabled
+        for (const u of this.units) u.sprite.setVisible(true)
+        for (const b of this.buildings) b.sprite.setVisible(true)
+      }
+    }
+  }
+
+  private pickNextWeather() {
+    const types = Object.keys(WEATHER_CONFIG) as WeatherType[]
+    const totalWeight = types.reduce((s, t) => s + WEATHER_CONFIG[t].weight, 0)
+    let rand = Math.random() * totalWeight
+    let chosen: WeatherType = 'clear'
+    for (const t of types) {
+      rand -= WEATHER_CONFIG[t].weight
+      if (rand <= 0) { chosen = t; break }
+    }
+    this.currentWeather = chosen
+    const cfg = WEATHER_CONFIG[chosen]
+    this.weatherRemaining = cfg.minDur + Math.random() * (cfg.maxDur - cfg.minDur)
+    this.weatherFrame = 0
+    this.weatherTicker = 0
+    if (uiWeatherBanner) {
+      uiWeatherBanner.textContent = cfg.label
+      uiWeatherBanner.style.color = cfg.color
     }
   }
 
@@ -841,12 +957,30 @@ class BattleScene extends Phaser.Scene {
       }
     }
 
+    // Fog overlay on minimap: darken hidden/explored tiles
+    if (this.fogEnabled) {
+      for (let py = 0; py < MAP_H; py += 3) {
+        for (let px = 0; px < MAP_W; px += 3) {
+          const state = this.fogState[py]?.[px] ?? 0
+          if (state === 0) {
+            this.minimap.fillStyle(0x000000, 0.85)
+            this.minimap.fillRect(x + px * sx, y + py * sy, sx * 2 + 1, sy * 2 + 1)
+          } else if (state === 1) {
+            this.minimap.fillStyle(0x000000, 0.45)
+            this.minimap.fillRect(x + px * sx, y + py * sy, sx * 2 + 1, sy * 2 + 1)
+          }
+        }
+      }
+    }
+
     for (const b of this.buildings) {
+      if (b.faction !== 'player' && this.fogEnabled && this.fogState[b.tileY]?.[b.tileX] !== 2) continue
       this.minimap.fillStyle(b.faction === 'player' ? 0x77beff : 0xff8f92, 0.9)
       this.minimap.fillRect(x + b.tileX * sx, y + b.tileY * sy, 2, 2)
     }
 
     for (const u of this.units) {
+      if (u.faction !== 'player' && this.fogEnabled && this.fogState[u.tileY]?.[u.tileX] !== 2) continue
       this.minimap.fillStyle(u.faction === 'player' ? 0x3f9dff : 0xff6368, 1)
       this.minimap.fillRect(x + u.tileX * sx, y + u.tileY * sy, 3, 3)
     }
@@ -880,6 +1014,86 @@ class BattleScene extends Phaser.Scene {
     const selectedUnits = this.units.filter((u) => this.selected.has(u.id))
     const lines = selectedUnits.slice(0, 6).map((u) => `Infantry #${u.id} HP ${Math.max(0, u.hp)}`)
     uiSelectedPanel.textContent = `Selected units: ${lines.join(' | ')}${selectedUnits.length > 6 ? ' ...' : ''}`
+  }
+
+  private computeFog() {
+    if (!this.fogEnabled) return
+
+    // Reset: previously visible → explored
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (this.fogState[y][x] === 2) this.fogState[y][x] = 1
+      }
+    }
+
+    const vMult = WEATHER_CONFIG[this.currentWeather].visionMult
+
+    // Vision from player units
+    for (const u of this.units) {
+      if (u.faction !== 'player' || u.hp <= 0) continue
+      // Forest reduces vision for units standing in it
+      const inForest = this.map[u.tileY]?.[u.tileX] === 'forest'
+      const radius = Math.round(UNIT_VISION_RADIUS * vMult * (inForest ? FOREST_VISION_PENALTY : 1))
+      this.applyVision(u.tileX, u.tileY, radius)
+    }
+
+    // Vision from player buildings
+    for (const b of this.buildings) {
+      if (b.faction !== 'player' || b.hp <= 0 || b.constructionLeft > 0) continue
+      const radius = Math.round(BUILDING_VISION[b.type] * vMult)
+      this.applyVision(b.tileX, b.tileY, radius)
+    }
+  }
+
+  private applyVision(cx: number, cy: number, radius: number) {
+    for (let y = cy - radius; y <= cy + radius; y++) {
+      for (let x = cx - radius; x <= cx + radius; x++) {
+        if (!this.inBounds(x, y)) continue
+        // Circular vision
+        if (Math.hypot(x - cx, y - cy) <= radius + 0.5) {
+          this.fogState[y][x] = 2
+        }
+      }
+    }
+  }
+
+  private renderFog() {
+    this.fogGraphics.clear()
+    if (!this.fogEnabled) return
+
+    // Draw hidden tiles (deep dark)
+    this.fogGraphics.fillStyle(0x090d14, 0.96)
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (this.fogState[y][x] === 0) {
+          this.fogGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        }
+      }
+    }
+
+    // Draw explored tiles (semi-dark — shows terrain but not units)
+    this.fogGraphics.fillStyle(0x090d14, 0.54)
+    for (let y = 0; y < MAP_H; y++) {
+      for (let x = 0; x < MAP_W; x++) {
+        if (this.fogState[y][x] === 1) {
+          this.fogGraphics.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+        }
+      }
+    }
+  }
+
+  private updateVisibility() {
+    if (!this.fogEnabled) return
+    for (const u of this.units) {
+      if (u.faction === 'player') continue
+      const visible = this.fogState[u.tileY]?.[u.tileX] === 2
+      u.sprite.setVisible(visible)
+    }
+    for (const b of this.buildings) {
+      if (b.faction === 'player') continue
+      const visible = this.fogState[b.tileY]?.[b.tileX] === 2
+      b.sprite.setVisible(visible)
+    }
   }
 }
 
